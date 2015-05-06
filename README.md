@@ -56,3 +56,11 @@ The instance can be connected like any other Web Audio node:
 var gainNode = audioContext.createGain();
 drumMachine.connect(gainNode);
 ```
+
+Make sure to run `ready()` before you try to start it, otherwise the samples won't be ready to play and you won't be able to listen to anything:
+
+```javascript
+drumMachine.ready().then(function(resolve) {
+	drumMachine.start();
+});
+```

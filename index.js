@@ -8,24 +8,35 @@ module.exports = function(context) {
 	var node = context.createGain();
 	var nodeProperties = {
 		steps: 16,
+		resolution: 16, // although it's actually the inverse 1/16
 		bpm: 125
 	};
 
 	setterGetterify(node, nodeProperties);
 
 	var patterns = [
-		{
-			0: [ 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 ]
-		}
+		[
+			[ 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 ],
+			[ 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0 ]
+		]
 	];
+	var currentPatternIndex = 0;
+	var eventsList = [];
+	var currentEventIndex = 0;
 	
 	// TODO: load samples
 	var samplePlayers = [];
 
+	// Sigh that we need to do it this way but it's the best we can do with
+	// browserify brfs transforms
 	var bassDrum = fs.readFileSync(__dirname + '/samples/bassdrum.wav');
+	var clap = fs.readFileSync(__dirname + '/samples/clap.wav');
 	var samples = [
-		bassDrum
+		bassDrum,
+		clap
 	];
+
+	var events = [];
 	
 	// Makes sure the machine is ready to play
 	node.ready = function() {
@@ -47,29 +58,11 @@ module.exports = function(context) {
 			samplePlayers.push(samplePlayer);
 			samplePlayer.connect(node);
 		
-			/*var res = context.decodeAudioData(arrayBuffer, function(bufferSource) {
-				console.log('decoded');
-				samplePlayer.buffer = bufferSource;
-			}, function(er) {
-				console.error('error decoding buffer', er);
-			});
-			console.log(res);*/
-
-			/*var sampleLoaded = context.decodeAudioData(arrayBuffer)
-				.then(function(buffer) {
-					//samplePlayer.buffer = buffer;
-					console.log('decoded', buffer);
-				}, function(err) {
-					console.error('error', err);
-				});*/
-
 			var sampleLoaded = new Promise(function(resolve, reject) {
 				context.decodeAudioData(arrayBuffer, function(buffer) {
-					console.log('decoded');
 					samplePlayer.buffer = buffer;
 					resolve(buffer);
 				}, function(err) {
-					console.error('err', err);
 					reject(err);
 				});
 			});
@@ -80,12 +73,45 @@ module.exports = function(context) {
 		return Promise.all(samplesLoaded);
 	};
 
+	function buildEventsList() {
+
+		var currentPattern = patterns[currentPatternIndex];
+		var steps = nodeProperties.steps;
+		var bpm = nodeProperties.bpm;
+		// TODO take resolution into account
+		var beatLength = bpm / 60.0;
+		var stepLength = beatLength / 4.0;
+		var numTracks = samplePlayers.length;
+
+		var eventTime = 0;
+
+		eventsList = [];
+		currentEventIndex = 0;
+
+		for(var step = 0; step < steps; step++) {
+
+			for(var track = 0; track < numTracks; track++) {
+				var trigger = currentPattern[track][step];
+				console.log(eventTime, trigger);
+				if(trigger) {
+					// TODO only adding 'trigger' events so far
+					var ev = { track: track, time: eventTime };
+					eventsList.push(ev);
+				}
+			}
+
+			eventTime += stepLength;
+		}
+		
+	}
+
 	// This will start playing at when i.e. schedule things to start there, and loop when done
 	node.start = function(when, offset, duration) {
 
 		console.log('dRUM MACHINE', 'start', 'when', when, 'offset', offset, 'duration', duration);
 
 		// TODO: Calculate events list
+		buildEventsList();
 
 		when = when !== undefined ? when : 0;
 		offset = offset !== undefined ? offset : 0;
@@ -101,9 +127,8 @@ module.exports = function(context) {
 	};
 
 	node.cancelScheduledEvents = function(when) {
+		// TODO cancel scheduled events on the 'child' sample players
 	};
-
-	
 
 	return node;
 
