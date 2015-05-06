@@ -1,0 +1,38 @@
+{
+  "name": "openmusic-drum-machine",
+  "version": "1.0.0",
+  "description": "A Web Audio drum machine",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "gulp build",
+    "watch": "gulp watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openmusic/drum-machine"
+  },
+  "keywords": [
+    "web audio"
+  ],
+  "author": "sole",
+  "license": "Apache 2",
+  "bugs": {
+    "url": "https://github.com/openmusic/drum-machine/issues"
+  },
+  "homepage": "https://github.com/openmusic/drum-machine",
+  "dependencies": {
+    "brfs": "^1.4.0",
+    "gulp": "^3.8.9",
+    "openmusic-demo-gulp-tasks": "^1.5.0",
+    "setter-getterify": "^1.0.0"
+  },
+  "browserify": {
+    "transform": [
+      "brfs"
+    ]
+  },
+  "devDependencies": {
+    "openmusic-oscilloscope": "^1.0.0"
+  }
+}
