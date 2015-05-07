@@ -114,13 +114,29 @@ module.exports = function(context) {
 		buildEventsList();
 
 		when = when !== undefined ? when : 0;
-		offset = offset !== undefined ? offset : 0;
+		// TODO do we care about this? offset = offset !== undefined ? offset : 0;
 
 		// TMP TMP TMP
-		samplePlayers.forEach(function(sampler) {
+		/*samplePlayers.forEach(function(sampler) {
 			sampler.start();
-		});
+		});*/
 		
+		// TODO set timer + periodically schedule slices & loop
+
+		// Make sure there are no leftovers
+		samplePlayers.forEach(function(sampler) {
+			sampler.stop();
+		});
+
+		var now = context.currentTime + when;
+
+		eventsList.forEach(function(ev) {
+			var t = ev.time + now;
+			var track = ev.track;
+			var sampler = samplePlayers[track];
+			sampler.start(t);
+		});
+
 	};
 
 	node.stop = function(when) {

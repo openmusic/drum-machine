@@ -24,9 +24,7 @@
   "dependencies": {
     "brfs": "^1.4.0",
     "es6-promise": "^2.1.1",
-    "gulp": "^3.8.9",
-    "openmusic-demo-gulp-tasks": "^1.5.0",
-    "openmusic-sample-player": "^1.3.1",
+    "openmusic-sample-player": "^1.4.3",
     "setter-getterify": "^1.0.0"
   },
   "browserify": {
@@ -35,6 +33,8 @@
     ]
   },
   "devDependencies": {
-    "openmusic-oscilloscope": "^1.0.0"
+    "openmusic-oscilloscope": "^1.0.0",
+    "openmusic-demo-gulp-tasks": "^1.5.0",
+    "gulp": "^3.8.9"
   }
 }
