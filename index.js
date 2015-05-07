@@ -17,7 +17,8 @@ module.exports = function(context) {
 	var patterns = [
 		[
 			[ 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 ],
-			[ 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0 ]
+			[ 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0 ],
+			[ 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0 ]
 		]
 	];
 	var currentPatternIndex = 0;
@@ -31,9 +32,12 @@ module.exports = function(context) {
 	// browserify brfs transforms
 	var bassDrum = fs.readFileSync(__dirname + '/samples/bassdrum.wav');
 	var clap = fs.readFileSync(__dirname + '/samples/clap.wav');
+	var closedHat = fs.readFileSync(__dirname + '/samples/hihat_closed.wav');
+
 	var samples = [
 		bassDrum,
-		clap
+		clap,
+		closedHat
 	];
 
 	var events = [];
@@ -80,7 +84,7 @@ module.exports = function(context) {
 		var bpm = nodeProperties.bpm;
 		// TODO take resolution into account
 		var beatLength = bpm / 60.0;
-		var stepLength = beatLength / 4.0;
+		var stepLength = beatLength / steps;
 		var numTracks = samplePlayers.length;
 
 		var eventTime = 0;
