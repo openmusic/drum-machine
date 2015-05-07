@@ -2,6 +2,7 @@ var fs = require('fs');
 var setterGetterify = require('setter-getterify');
 var SamplePlayer = require('openmusic-sample-player');
 var Promise = require('es6-promise').Promise;
+var Scheduler = require('./Scheduler');
 
 module.exports = function(context) {
 
@@ -25,6 +26,15 @@ module.exports = function(context) {
 	var eventsList = [];
 	var currentEventIndex = 0;
 	
+	// TODO have a real player
+	var player = {
+		scheduleEvents: scheduleEvents,
+		start: startPlaying,
+		loopStart: 0,
+		loop: true
+	};
+	var scheduler = new Scheduler(context, player);
+
 	// TODO: load samples
 	var samplePlayers = [];
 
@@ -40,8 +50,6 @@ module.exports = function(context) {
 		closedHat
 	];
 
-	var events = [];
-	
 	// Makes sure the machine is ready to play
 	node.ready = function() {
 		var samplesLoaded = [];
@@ -96,7 +104,6 @@ module.exports = function(context) {
 
 			for(var track = 0; track < numTracks; track++) {
 				var trigger = currentPattern[track][step];
-				console.log(eventTime, trigger);
 				if(trigger) {
 					// TODO only adding 'trigger' events so far
 					var ev = { track: track, time: eventTime };
@@ -114,32 +121,29 @@ module.exports = function(context) {
 
 		console.log('dRUM MACHINE', 'start', 'when', when, 'offset', offset, 'duration', duration);
 
-		// TODO: Calculate events list
 		buildEventsList();
 
 		when = when !== undefined ? when : 0;
-		// TODO do we care about this? offset = offset !== undefined ? offset : 0;
 
-		// TMP TMP TMP
-		/*samplePlayers.forEach(function(sampler) {
-			sampler.start();
-		});*/
-		
-		// TODO set timer + periodically schedule slices & loop
-
-		// Make sure there are no leftovers
+		// Make sure there are no 'leftovers'
 		samplePlayers.forEach(function(sampler) {
 			sampler.stop();
 		});
 
 		var now = context.currentTime + when;
 
-		eventsList.forEach(function(ev) {
+		/*eventsList.forEach(function(ev) {
 			var t = ev.time + now;
 			var track = ev.track;
 			var sampler = samplePlayers[track];
 			sampler.start(t);
-		});
+		});*/
+
+		scheduler.start(now);
+
+		//setTimeout(function() {
+		//	scheduler.stop();
+		//}, 1000);
 
 	};
 
@@ -149,6 +153,56 @@ module.exports = function(context) {
 	node.cancelScheduledEvents = function(when) {
 		// TODO cancel scheduled events on the 'child' sample players
 	};
+
+	function scheduleEvents(when, scheduleSliceLength) {
+
+		var relTime = when - player.loopStart,
+			sliceEnd = relTime + scheduleSliceLength,
+			ev,
+			evTime;
+
+		console.log('scheduleEvents', when, scheduleSliceLength, sliceEnd);
+		
+		if(player.finished && player.loop) {
+			//this.jumpToOrder(0, 0);
+			currentEventIndex = 0; // TODO equivalent? ^
+			player.finished = false;
+		}
+
+		if(currentEventIndex >= eventsList.length) {
+			player.finished = true;
+			player.loopStart = when;
+			return;
+		}
+
+		do {
+
+			ev = eventsList[currentEventIndex];
+			evTime = ev.time;
+			
+			if(evTime > sliceEnd) {
+				break;
+			}
+
+			// Not scheduling things we left behind
+			if(evTime >= relTime) {
+				
+				var track = ev.track;
+				var sampler = samplePlayers[track];
+				var absTime = evTime + player.loopStart;
+				sampler.start(absTime);
+			}
+
+			currentEventIndex++;
+
+		} while(currentEventIndex < eventsList.length);
+
+	}
+
+	function startPlaying(when) {
+		console.log('startPlaying', when);
+		player.loopStart = when;
+	}
 
 	return node;
 
