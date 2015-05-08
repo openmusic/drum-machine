@@ -120,7 +120,7 @@ module.exports = function(context) {
 
 			// TODO dispatch event for drawing if step != oldStep
 			if(oldStep !== currentStep) {
-				console.log('step', currentStep);
+				// console.log('step', currentStep);
 			}
 		}
 
