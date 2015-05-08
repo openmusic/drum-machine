@@ -33,8 +33,9 @@
     ]
   },
   "devDependencies": {
-    "openmusic-oscilloscope": "^1.0.0",
+    "gulp": "^3.8.9",
     "openmusic-demo-gulp-tasks": "^1.5.0",
-    "gulp": "^3.8.9"
+    "openmusic-oscilloscope": "^1.0.0",
+    "openmusic-slider": "^1.0.0"
   }
 }
