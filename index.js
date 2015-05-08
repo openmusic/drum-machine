@@ -2,7 +2,6 @@ var fs = require('fs');
 var setterGetterify = require('setter-getterify');
 var SamplePlayer = require('openmusic-sample-player');
 var Promise = require('es6-promise').Promise;
-var Scheduler = require('./Scheduler');
 
 module.exports = function(context) {
 
@@ -19,23 +18,16 @@ module.exports = function(context) {
 		[
 			[ 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 ],
 			[ 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0 ],
-			[ 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0 ]
+			[ 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1 ]
 		]
 	];
-	var currentPatternIndex = 0;
-	var eventsList = [];
-	var currentEventIndex = 0;
+	var currentPatternIndex = 0; // TODO not used yet
+	var currentStep = 0;
+	var stepTime;
+	var startTime;
 	
-	// TODO have a real player
-	var player = {
-		scheduleEvents: scheduleEvents,
-		start: startPlaying,
-		loopStart: 0,
-		loop: true
-	};
-	var scheduler = new Scheduler(context, player);
+	var scheduleTimeout = null;
 
-	// TODO: load samples
 	var samplePlayers = [];
 
 	// Sigh that we need to do it this way but it's the best we can do with
@@ -63,7 +55,6 @@ module.exports = function(context) {
 		samplePlayers = [];
 		
 		samples.forEach(function(sample, index) {
-			console.log('loading sample', index);
 			var samplePlayer = new SamplePlayer(context);
 			var arrayBuffer = sample.toArrayBuffer();
 		
@@ -85,123 +76,74 @@ module.exports = function(context) {
 		return Promise.all(samplesLoaded);
 	};
 
-	function buildEventsList() {
-
-		var currentPattern = patterns[currentPatternIndex];
-		var steps = nodeProperties.steps;
-		var bpm = nodeProperties.bpm;
-		// TODO take resolution into account
-		var beatLength = bpm / 60.0;
-		var stepLength = beatLength / steps;
-		var numTracks = samplePlayers.length;
-
-		var eventTime = 0;
-
-		eventsList = [];
-		currentEventIndex = 0;
-
-		for(var step = 0; step < steps; step++) {
-
-			for(var track = 0; track < numTracks; track++) {
-				var trigger = currentPattern[track][step];
-				if(trigger) {
-					// TODO only adding 'trigger' events so far
-					var ev = { track: track, time: eventTime };
-					eventsList.push(ev);
-				}
-			}
-
-			eventTime += stepLength;
-		}
-		
-	}
-
-	// This will start playing at when i.e. schedule things to start there, and loop when done
-	node.start = function(when, offset, duration) {
-
-		console.log('dRUM MACHINE', 'start', 'when', when, 'offset', offset, 'duration', duration);
-
-		buildEventsList();
-
-		when = when !== undefined ? when : 0;
-
-		// Make sure there are no 'leftovers'
+	node.start = function() {
+		stepTime = 0.0;
+		startTime = context.currentTime + 0.005;
 		samplePlayers.forEach(function(sampler) {
 			sampler.stop();
 		});
-
-		var now = context.currentTime + when;
-
-		/*eventsList.forEach(function(ev) {
-			var t = ev.time + now;
-			var track = ev.track;
-			var sampler = samplePlayers[track];
-			sampler.start(t);
-		});*/
-
-		scheduler.start(now);
-
-		//setTimeout(function() {
-		//	scheduler.stop();
-		//}, 1000);
-
+		schedule();
 	};
 
 	node.stop = function(when) {
+		clearTimeout(scheduleTimeout);
 	};
 
 	node.cancelScheduledEvents = function(when) {
 		// TODO cancel scheduled events on the 'child' sample players
 	};
 
-	function scheduleEvents(when, scheduleSliceLength) {
-
-		var relTime = when - player.loopStart,
-			sliceEnd = relTime + scheduleSliceLength,
-			ev,
-			evTime;
-
-		console.log('scheduleEvents', when, scheduleSliceLength, sliceEnd);
+	function schedule() {
 		
-		if(player.finished && player.loop) {
-			//this.jumpToOrder(0, 0);
-			currentEventIndex = 0; // TODO equivalent? ^
-			player.finished = false;
-		}
+		var currentPattern = patterns[currentPatternIndex];
+		var numTracks = samplePlayers.length;
 
-		if(currentEventIndex >= eventsList.length) {
-			player.finished = true;
-			player.loopStart = when;
-			return;
-		}
+		var currentTime = context.currentTime;
 
-		do {
+		currentTime -= startTime;
 
-			ev = eventsList[currentEventIndex];
-			evTime = ev.time;
-			
-			if(evTime > sliceEnd) {
-				break;
-			}
+		// TODO also why 0.2
+		while(stepTime < currentTime + 0.2) {
 
-			// Not scheduling things we left behind
-			if(evTime >= relTime) {
-				
-				var track = ev.track;
+			var contextPlayTime = stepTime + startTime;
+
+			for(var track = 0; track < numTracks; track++) {
 				var sampler = samplePlayers[track];
-				var absTime = evTime + player.loopStart;
-				sampler.start(absTime);
+				var trigger = currentPattern[track][currentStep];
+				if(trigger) {
+					sampler.start(contextPlayTime);
+				}
 			}
 
-			currentEventIndex++;
+			var oldStep = currentStep;
+			advanceStep();
 
-		} while(currentEventIndex < eventsList.length);
+			// TODO dispatch event for drawing if step != oldStep
+			if(oldStep !== currentStep) {
+				console.log('step', currentStep);
+			}
+		}
+
+		// TODO: Chris's example has the timeout at 0 but it seems excessive?
+		scheduleTimeout = setTimeout(schedule, 10);
 
 	}
 
-	function startPlaying(when) {
-		console.log('startPlaying', when);
-		player.loopStart = when;
+	function advanceStep() {
+		
+		// Advance time by a 16th note...
+	    var secondsPerBeat = 60.0 / nodeProperties.bpm;
+		
+		currentStep++;
+
+		if(currentStep === nodeProperties.steps) {
+			currentStep = 0;
+		}
+
+		// TODO something something swing which I'm ignoring
+		// TODO also why 0.25 - maybe because it's a black note so 1/4 of bar?
+		stepTime += 0.25 * secondsPerBeat;
+
 	}
 
 	return node;
