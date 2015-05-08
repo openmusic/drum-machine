@@ -13,7 +13,7 @@ var node = DrumMachine(ac);
 node.connect(analyser);
 
 node.ready().then(function() {
-	console.log('ok we can go');
+	console.log('ok we can go, the machine has ', node.tracks, 'tracks');
 	node.start();
 });
 

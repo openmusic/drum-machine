@@ -7,6 +7,7 @@ module.exports = function(context) {
 
 	var node = context.createGain();
 	var nodeProperties = {
+		tracks: 0,
 		steps: 16,
 		resolution: 16, // although it's actually the inverse 1/16
 		bpm: 125
@@ -73,6 +74,8 @@ module.exports = function(context) {
 			samplesLoaded.push(sampleLoaded);
 		});
 
+		nodeProperties.tracks = samplePlayers.length;
+		
 		return Promise.all(samplesLoaded);
 	};
 
