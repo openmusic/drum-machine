@@ -12,6 +12,11 @@ var DrumMachine = require('../');
 var node = DrumMachine(ac);
 node.connect(analyser);
 
+var step = document.getElementById('step');
+node.addEventListener('step', function(ev) {
+	step.innerHTML = ev.detail.value;
+});
+
 node.ready().then(function() {
 	console.log('ok we can go, the machine has ', node.tracks, 'tracks');
 	node.start();

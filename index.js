@@ -121,9 +121,10 @@ module.exports = function(context) {
 			var oldStep = currentStep;
 			advanceStep();
 
-			// TODO dispatch event for drawing if step != oldStep
+			// Dispatch event for drawing if step != oldStep
 			if(oldStep !== currentStep) {
-				// console.log('step', currentStep);
+				var ev = new CustomEvent('step', { detail: { value: currentStep } });
+				node.dispatchEvent(ev);
 			}
 		}
 
