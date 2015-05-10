@@ -45,6 +45,7 @@ module.exports = function(context) {
 		closedHat
 	];
 
+	
 	// Makes sure the machine is ready to play
 	node.ready = function() {
 		var samplesLoaded = [];
@@ -83,6 +84,7 @@ module.exports = function(context) {
 		return Promise.all(samplesLoaded);
 	};
 
+
 	node.start = function() {
 		stepTime = 0.0;
 		startTime = context.currentTime + 0.005;
@@ -92,14 +94,23 @@ module.exports = function(context) {
 		schedule();
 	};
 
+
 	node.stop = function(when) {
 		clearTimeout(scheduleTimeout);
 	};
 
+	
 	node.cancelScheduledEvents = function(when) {
 		// TODO cancel scheduled events on the 'child' sample players
 	};
 
+
+	node.setStep = function(track, step, trigger) {
+		var currentPattern = this.currentPattern;
+		currentPattern[track][step] = trigger;
+	};
+
+	
 	function schedule() {
 		
 		var currentPattern = patterns[currentPatternIndex];
