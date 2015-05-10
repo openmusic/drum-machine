@@ -10,7 +10,8 @@ module.exports = function(context) {
 		tracks: 0,
 		steps: 16,
 		resolution: 16, // although it's actually the inverse 1/16
-		bpm: 125
+		bpm: 125,
+		currentPattern: []
 	};
 
 	setterGetterify(node, nodeProperties);
@@ -30,6 +31,7 @@ module.exports = function(context) {
 	var scheduleTimeout = null;
 
 	var samplePlayers = [];
+
 
 	// Sigh that we need to do it this way but it's the best we can do with
 	// browserify brfs transforms
@@ -74,6 +76,8 @@ module.exports = function(context) {
 			samplesLoaded.push(sampleLoaded);
 		});
 
+		// Kinda hacks for the time being
+		nodeProperties.currentPattern = patterns[currentPatternIndex];
 		nodeProperties.tracks = samplePlayers.length;
 		
 		return Promise.all(samplesLoaded);
@@ -153,3 +157,5 @@ module.exports = function(context) {
 	return node;
 
 };
+
+
