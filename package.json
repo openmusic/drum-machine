@@ -36,6 +36,6 @@
     "gulp": "^3.8.9",
     "openmusic-demo-gulp-tasks": "^1.5.0",
     "openmusic-oscilloscope": "^1.0.0",
-    "openmusic-slider": "^1.0.0"
+    "openmusic-slider": "^2.0.0"
   }
 }
